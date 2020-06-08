@@ -1,29 +1,3 @@
-<!-- 
-    turkey: an Amazon Mechanical Turk turn-key segment tool.
-
-    MIT License
-
-    Copyright (c) 2018 Yanfeng Liu, Jay Carlson, Eric Psota, Lance C. Pérez
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
- -->
-
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
     crossorigin="anonymous">
 <link crossorigin="anonymous" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
@@ -42,8 +16,12 @@
         margin: auto;
     }
 
-    #myCanvas {
+    .canvas {
         position: absolute;
+    }
+
+    #maskCanvas {
+        opacity: 0.5;
     }
 
     #pic{
@@ -63,7 +41,20 @@
         width: 130px !important;
     }
 
-    #class {
+    #object_class {
+        /* display: none; */
+        width: 200px;
+        float:right;
+    }
+
+    #material_class {
+        display: none;
+        width: 200px;
+        float:right;
+    }
+
+    #condition_class {
+        display: none;
         width: 200px;
         float:right;
     }
@@ -75,35 +66,110 @@
     #buttons {
         margin-top: 20px;
     }
+
+    #contextmenu{
+        display:none;
+        position:fixed;
+        left:0px;
+        top:0px;
+        width:200px;
+        height:180px;
+        border:1px solid #000;
+        background-color:#fff;
+    }
+    #contextmenu li{
+        user-select: none;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        cursor:pointer;
+    }
+    #contextmenu ul {
+        user-select: none;
+        list-style: none;
+        padding-left: 20px;
+    }
+    #edit_label{
+        user-select: none;
+        border-top:1px solid #f1f6fc;
+        border-bottom:1px solid #84b2e0;
+    }
+
+    .edit_label_menu{
+        user-select: none;
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .edit_label_menu_content{
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        user-select: none;
+        padding-top: 20px;
+        padding-left: 20px;
+        padding-bottom: 20px;
+        padding-right: 20px;
+        background-color: white;
+        width: 500px;
+        height: 400px;
+        margin: auto;
+    }
+
+    .current_label{
+        user-select: none;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        border-top:1px solid #f1f6fc;
+        border-bottom:1px solid #84b2e0;
+    }
+
+    #myCanvas{
+        user-select: none;
+    }
+
+    .hoge{
+        color: #FF0000;
+    }
+
 </style>
 
 <div id="text" style="display:inline-block;vertical-align:top;">
     <button id="title" type="button" class="btn btn-outline-primary btn-lg">Instructions</button>
-    <select id="class" class="form-control"></select>
+    <select id="object_class" class="form-control"></select>
+    <select id="material_class" class="form-control"></select>
+    <select id="condition_class" class="form-control"></select>
     <ul id="instruction">
         <li>Hold <strong>right click</strong> to draw the image.</li>
-        <li><strong>Left click</strong> to annotate the image using up to three modes:</li>
-        <ul>
-            <li><strong>Dot mode</strong> indicates the location of the object with one left click. </li>
-            <li><strong>Link mode</strong> indicates head (1st click) and tail (2nd click).</li>
-            <li><strong>Polygon mode</strong> draws the segmentation mask of the object.</li>
-            <li><strong>Bbox mode</strong> draws the bounding box of the object by holding down left click. </li>
-        </ul>
-        <li>The <strong>Mode toggle</strong> button indicates the current mode</li>
+        <li><strong>Left click</strong> to draw the segmentation mask of the object.</li>
         <li>Press <strong>CTRL+Z</strong> or click the <strong>Undo</strong> button to undo last deletion/annotation.</li>
-        <li>Press <strong>C</strong> to close polygon in polygon mode.</li>
-        <li>Click <strong>Delete/Annotate</strong> flip switch or press <strong>D</strong> to toggle between deleting and annotating.</li>
-        <li>Click the <strong>Undo</strong> button to undo your last deletion/annotation depending on your current mode.</li>
+        <li>Press <strong>C</strong> to close polygon.</li>
+        <li>Click the <strong>Delete</strong> button or press <strong>D</strong> to set detele mode.</li>
+        <li>Click the <strong>Annotate</strong> button or press <strong>A</strong> to set annotate mode.</li>
+        <li>Click the <strong>Edit</strong> button or press <strong>E</strong> to set edit mode.</li>
+        <li>Click the <strong>Undo</strong> button to undo your last deletion/annotation.</li>
         <li>Click the <strong>Reset</strong> button to clear all annotations.</li>
         <li>Click the <strong>Reposition</strong> button to center the image and reset zoom.</li>
         <li>Click the <strong>Submit</strong> button to finish current task.</li>
     </ul>
 
     <p id="buttons">
-        <input class="btn btn-info fixed_width" id="mode_button" type="button" value = "Dot Mode" />
         <span id="delete_flip", class="btn-group btn-group-toggle" data-toggle="buttons">
             <label class="btn btn-outline-secondary disabled" type="radio" name="options" id="delete_button" autocomplete="off" checked> Delete </label>
             <label class="btn btn-primary" type="radio" name="options" id="annotate_button" autocomplete="off"> Annotate </label>
+            <label class="btn btn-outline-secondary disabled" type="radio" name="options" id="edit_button" autocomplete="off" checked> Edit </label>
+        </span>
+        <span id="delete_flip", class="btn-group btn-group-toggle" data-toggle="buttons">
+            <label class="btn btn-primary" type="radio" name="options" id="object_button" autocomplete="off" checked> Object </label>
+            <label class="btn btn-outline-secondary" type="radio" name="options" id="material_button" autocomplete="off"> Material </label>
+            <label class="btn btn-outline-secondary" type="radio" name="options" id="condition_button" autocomplete="off" checked> Condition </label>
         </span>
         <input class="btn btn-secondary" id="undo_button" type="button" value = "Undo" />
         <input class="btn btn-danger" id="reset_button" type="button" value = "Reset" />
@@ -115,6 +181,11 @@
         <input type="range" min="0" max="100" class="range-field my-4 w-25" id="transparency_slider">
     </p>
 
+    <p>
+        <label for="masktransparency">Mask Transparency percentage</label>
+        <input type="range" min="0" max="100" class="range-field my-4 w-25" id="mask_transparency_slider">
+    </p>
+
     <div>
         <!-- Coordinates input from user -->
         <input id="coordinates" name="coordinates" type="hidden" />
@@ -123,9 +194,49 @@
 
 <div id="parent">
     <div id="child">
-        <canvas id="myCanvas">
-        </canvas>
+        <canvas class="canvas" id="maskCanvas"></canvas>
+        <canvas class="canvas" id="myCanvas"></canvas>
         <img id="pic" src="${img_url}" />
+    </div>
+</div>
+
+<div id="contextmenu">
+    <ul>
+        <li id="edit_label">Edit Label</li>
+        <li id="bring_to_front">Bring to Front</li>
+        <li id="bring_forward">Bring Forward</li>
+        <li id="send_backward">Send Backward</li>
+        <li id="send_to_back">Send to Back</li>
+    </ul>
+</div>
+
+<div class="edit_label_menu", id="object_edit_label_menu">
+    <div class="edit_label_menu_content", id="object_edit_label_menu_content">
+        <div class="current_label" id="object_current_label">
+            Current label : house
+        </div>
+        <ul class="label_list" id="object_label_list" style="cursor: pointer">
+        </ul>
+    </div>
+</div>
+
+<div class="edit_label_menu", id="material_edit_label_menu">
+    <div class="edit_label_menu_content", id="material_edit_label_menu_content">
+        <div class="current_label" id="material_current_label">
+            Current label : house
+        </div>
+        <ul class="label_list" id="material_label_list" style="cursor: pointer">
+        </ul>
+    </div>
+</div>
+
+<div class="edit_label_menu", id="condition_edit_label_menu">
+    <div class="edit_label_menu_content", id="condition_edit_label_menu_content">
+        <div class="current_label" id="condition_current_label">
+            Current label : house
+        </div>
+        <ul class="label_list" id="condition_label_list" style="cursor: pointer">
+        </ul>
     </div>
 </div>
 
@@ -134,7 +245,8 @@
     var anchorX, anchorY, dragX, dragY, mouseX, mouseY;
     var dragged, dragStart, delta, scaleRatio, scaleDiff;
     var child, parent, canvas, ctx, img;
-    var annotations, modes, classSelection;
+    var annotations, objectAnnotations, materialAnnotations, conditionAnnotations;
+    var objectClassSelection, materialClassSelection, conditionClassSelection;
     var transparency_level = 0.5;
     var dragOffsetX = 0;
     var dragOffsetY = 0;
@@ -143,34 +255,51 @@
     var oldScale = 1.0;
     var newScale = 1.0;
     var firstPoint = true;
-    var mode = "";
-    var modeNum = 0;
     var dotSize = 4;
     var scaleTransform = 1;
     var translateTransform = [0, 0];
     var translateTransform_raw = [0, 0];
     var delete_mode = false;
-    var delete_idx = -1;
+    var current_mode = 1;
+    var current_task_mode = 0;
+    var polygon_idx = -1;
     var trashcan = new Array();
     var colors = {};
     var timeDownUp = null;
     var rightClick = false;
+    var menuOpening;
+    var annotationMode;
+    const DELETE_MODE = 0;
+    const ANNOTATE_MODE = 1;
+    const EDIT_MODE = 2;
+    const OBJECT_MODE = 0;
+    const MATERIAL_MODE = 1;
+    const CONDITION_MODE = 2;
 
-    var currentLink    = { 'class': [], 'mode': 'link', 'data': [] };
-    var currentPolygon = { 'class': [], 'mode': 'polygon', 'data': [] };
-    var currentBbox    = { 'class': [], 'mode': 'bbox', 'data': [] };
+    var classes_data = "person-tree-house-road-car-vegetation-ground-static-dynamic";
+    var material_classes_data = "asphalt-concrete-metal";
+    var condition_classes_data = "dry-wet-icy";
+    
+    var currentPolygon = { 'class': [] , 'data': [] };
 
     var start = function () {
         parent = document.getElementById("parent");
         child = document.getElementById("child");
         canvas = document.getElementById("myCanvas");
+        maskCanvas = document.getElementById("maskCanvas")
         ctx = canvas.getContext("2d");
+        maskctx = maskCanvas.getContext("2d");
         img = document.getElementById("pic");
-        modeButton = document.getElementById("mode_button");
+        object_label_list = document.getElementById("object_label_list");
+        material_label_list = document.getElementById("material_label_list");
+        condition_label_list = document.getElementById("condition_label_list");
 
         canvas.width = img.width;
         canvas.height = img.height;
         canvas.style.cursor = "crosshair";
+        maskCanvas.width = img.width;
+        maskCanvas.height = img.height;
+        maskCanvas.style.cursor = "crosshair";
         
         $('#instruction').slideUp(1000);
 
@@ -183,53 +312,196 @@
         if (annotations_str == ("$" + "{annotations}")){
             annotations = [];
         } else {
-            annotations_str = annotations_str.replace(/'/g, '"');
-            annotations_str = annotations_str.replace(/;/g, ',');
-            annotations = JSON.parse(annotations_str);
+            annotations = [];
+            // annotations_str = annotations_str.replace(/'/g, '"');
+            // annotations_str = annotations_str.replace(/;/g, ',');
+            // annotations = JSON.parse(annotations_str);
+            // annotationsChanged();
+        }
+
+        objectAnnotations = [];
+        materialAnnotations = [];
+        conditionAnnotations = [];
+        
+        function push(obj) {
+            Array.prototype.push.call(this, obj);
             annotationsChanged();
         }
+        
+        function splice(...args) {
+            switch (args.length) {
+                case 1:
+                    Array.prototype.splice.call(this, args[0]);
+                    break;
+                case 2:
+                    Array.prototype.splice.call(this, args[0], args[1]);
+                    break;
+                case 3:
+                    Array.prototype.splice.call(this, args[0], args[1], args[2]);
+            }
+            annotationsChanged();
+        }
+
+        function moveElement(src, dst){
+            if (src === dst || src > this.length -1 || dst > this.length - 1) {
+                return;
+            }
+            const value = this[src];
+            const tail = this.slice(src + 1);
+            this.splice(src);
+            Array.prototype.push.apply(this, tail);
+            this.splice(dst, 0, value);
+        }
+
+        annotations.push = push;
+        annotations.splice = splice;
+        annotations.moveElement = moveElement;
+        // objectAnnotations.push = push;
+        // objectAnnotations.splice = splice;
+        // objectAnnotations.moveElement = moveElement;
+        // materialAnnotations.push = push;
+        // materialAnnotations.splice = splice;
+        // materialAnnotations.moveElement = moveElement;
+        // conditionAnnotations.push = push;
+        // conditionAnnotations.splice = splice;
+        // conditionAnnotations.moveElement = moveElement;
 
         annotations.push = function(obj) {
             Array.prototype.push.call(annotations, obj);
             annotationsChanged();
         }
 
-        annotations.splice = function(idx, numElements) {
-            Array.prototype.splice.call(annotations, idx, numElements);
+        annotations.splice = function(...args) {
+            switch (args.length) {
+                case 1:
+                    Array.prototype.splice.call(annotations, args[0]);
+                    break;
+                case 2:
+                    Array.prototype.splice.call(annotations, args[0], args[1]);
+                    break;
+                case 3:
+                    Array.prototype.splice.call(annotations, args[0], args[1], args[2]);
+            }
             annotationsChanged();
         }
 
-        var mode_data = "${annotation_mode}";
-        if (mode_data == ("$" + "{annotation_mode}")) // running in local demo mode
-        {
-            mode_data = "dot-link-polygon-bbox";
+        annotations.moveElement = function(src, dst){
+            if (src === dst || src > annotations.length -1 || dst > annotations.length - 1) {
+                return;
+            }
+            const value = annotations[src];
+            const tail = annotations.slice(src + 1);
+            annotations.splice(src);
+            Array.prototype.push.apply(annotations, tail);
+            annotations.splice(dst, 0, value);
         }
-        modes = mode_data.split('-');
-        mode = modes[0];
-        modeButton.value = 'Mode: ' + capitalize(mode);
 
-        // generate select list options
-        classSelection = document.getElementById("class");
-        var classes_data = "${classes}";
-        if (classes_data == ("$" + "{classes}")) // running in local demo mode
+        // object class initialization
         {
-            classes_data = "person-tree-house";
+            objectClassSelection = document.getElementById("object_class");
+            classes = classes_data.split('-');
+
+            // populate list items and generate unique colors based on string hash
+            var hueCount = 0;
+            var classesLength = classes.length;
+            classes.forEach((theClass) => {
+                var option = document.createElement("option");
+                // var hue = Math.abs(theClass.hashCode() % 360) / 360;
+                var hue = hueCount/classesLength
+                hueCount++;
+                var color = [hue, 1.0, 1.0];
+                option.innerHTML = theClass;
+                option.style.background = HSVtoRGBstring(hue,1,1);
+                option.style.color = blackOrWhite(HSVtoRGBstring(hue,1,1));
+                objectClassSelection.appendChild(option);
+                colors[theClass] = color;
+
+                var newLi = document.createElement("li");
+                newLi.id = theClass;
+                newLi.innerHTML = theClass;
+                object_label_list.appendChild(newLi);
+                document.getElementById(theClass).onclick = function(){
+                    annotations[polygon_idx].class = theClass;
+                    document.getElementById('object_edit_label_menu').style.display="none";
+                    updateGraphics();
+                }
+            });
+            objectClassSelection.size = Math.min(10, classes.length);
+            objectClassSelection.selectedIndex = 0;
+            updateGraphics();
         }
-        classes = classes_data.split('-');
 
-        // populate list items and generate unique colors based on string hash
-        classes.forEach((theClass) => {
-            var option = document.createElement("option");
-            var hue = Math.abs(theClass.hashCode() % 360) / 360;
-            var color = [hue, 1.0, 1.0];
-            option.innerHTML = theClass;
-            classSelection.appendChild(option);
-            colors[theClass] = color;
-        });
+        // material class initialization
+        {
+            materialClassSelection = document.getElementById("material_class");
+            materialClasses = material_classes_data.split('-');
 
-        classSelection.size = Math.min(10, classes.length);
-        classSelection.selectedIndex = 0;
-        updateGraphics();
+            // populate list items and generate unique colors based on string hash
+            var hueCount = 0;
+            var classesLength = materialClasses.length;
+            materialClasses.forEach((theClass) => {
+                var option = document.createElement("option");
+                // var hue = Math.abs(theClass.hashCode() % 360) / 360;
+                var hue = hueCount/classesLength
+                hueCount++;
+                var color = [hue, 1.0, 1.0];
+                option.innerHTML = theClass;
+                option.style.background = HSVtoRGBstring(hue,1,1);
+                option.style.color = blackOrWhite(HSVtoRGBstring(hue,1,1));
+                materialClassSelection.appendChild(option);
+                colors[theClass] = color;
+
+                var newLi = document.createElement("li");
+                newLi.id = theClass;
+                newLi.innerHTML = theClass;
+                material_label_list.appendChild(newLi);
+                document.getElementById(theClass).onclick = function(){
+                    annotations[polygon_idx].class = theClass;
+                    document.getElementById('material_edit_label_menu').style.display="none";
+                    updateGraphics();
+                }
+            });
+
+            materialClassSelection.size = Math.min(10, materialClasses.length);
+            materialClassSelection.selectedIndex = 0;
+            updateGraphics();
+        }
+
+        // condition class initialization
+        {
+            conditionClassSelection = document.getElementById("condition_class");
+            conditionClasses = condition_classes_data.split('-');
+
+            // populate list items and generate unique colors based on string hash
+            var hueCount = 0;
+            var classesLength = conditionClasses.length;
+            conditionClasses.forEach((theClass) => {
+                var option = document.createElement("option");
+                // var hue = Math.abs(theClass.hashCode() % 360) / 360;
+                var hue = hueCount/classesLength
+                hueCount++;
+                var color = [hue, 1.0, 1.0];
+                option.innerHTML = theClass;
+                option.style.background = HSVtoRGBstring(hue,1,1);
+                option.style.color = blackOrWhite(HSVtoRGBstring(hue,1,1));
+                conditionClassSelection.appendChild(option);
+                colors[theClass] = color;
+
+                var newLi = document.createElement("li");
+                newLi.id = theClass;
+                newLi.innerHTML = theClass;
+                condition_label_list.appendChild(newLi);
+                document.getElementById(theClass).onclick = function(){
+                    annotations[polygon_idx].class = theClass;
+                    document.getElementById('condition_edit_label_menu').style.display="none";
+                    updateGraphics();
+                }
+            });
+
+            conditionClassSelection.size = Math.min(10, conditionClasses.length);
+            conditionClassSelection.selectedIndex = 0;
+            updateGraphics();
+        }
 
         //initialize slider
         var slider = document.getElementById('transparency_slider')
@@ -237,20 +509,35 @@
             transparency_level = this.value / 100.0;
             updateGraphics();
         };
+        
+        var maskslider = document.getElementById('mask_transparency_slider')
+        maskslider.oninput = function() {
+            mask_transparency_level = this.value / 100.0;
+            maskCanvas.style.opacity = mask_transparency_level;
+        };
 
         //initialize buttons
         $("#reset_button"     ).click(reset);
         $("#reposition_button").click(reposition);
         $("#undo_button"      ).click(undo);
-        $("#mode_button"      ).click(toggleMode);
-        $("#delete_button"    ).click(setDeleteMode);
-        $("#annotate_button"  ).click(setDeleteMode);
+        $("#delete_button"    ).click(setDelete);
+        $("#annotate_button"  ).click(setAnnotate);
+        $("#edit_button"      ).click(setEdit);
+        $("#object_button"    ).click(setObjectMode);
+        $("#material_button"  ).click(setMaterialMode);
+        $("#condition_button" ).click(setConditionMode);
 
         document.getElementById("submitButton").disabled = false;
         document.getElementById("buttons").appendChild(document.getElementById("submitButton"));
 
         child.addEventListener('DOMMouseScroll', handleScroll, false);
         child.addEventListener('mousewheel', handleScroll, false);
+
+        function scroll_control(event) {
+           event.preventDefault();
+        }
+        child.addEventListener('mousewheel', scroll_control, false); //canvas内スクロールを無効化
+
 
         // disable right click context menu on canvas
         canvas.oncontextmenu = function ()
@@ -264,6 +551,9 @@
         });
 
         canvas.addEventListener('pointerdown', function (evt) {
+            if (menuOpening) {
+                return;
+            }
             rightClick = evt.which == 3;
             getCorrectCoords(evt);
             timeDownUp = new Date().getTime();
@@ -271,36 +561,29 @@
             anchorY = evt.clientY;
             dragged = false;
             dragStart = true;
-            if (mode == "bbox" && !rightClick && !getDeleteMode()){
-                currentBbox.class = getClass();
-                currentBbox.data = new Array();
-                currentBbox.data.push([correctX, correctY]);
-            }
         });
 
         canvas.addEventListener('pointerup', function (evt) {
+            if (menuOpening){
+                menuOpening = false;
+                document.getElementById('contextmenu').style.display="none";
+                return;
+            }
             timeDownUp = new Date().getTime();
             getCorrectCoords(evt);
-            if (dragged) {
-                if (mode == "bbox" && !rightClick) {
-                    currentBbox.data.push([correctX, correctY]);
-                    if (currentBbox.data.length == 2){
-                        annotations.push(Object.assign({}, currentBbox));
-                    }
-                    currentBbox.data = new Array();
-                }
-            } else {
-                if (!rightClick){
-                    if (getDeleteMode() == true) {
+            if (!rightClick){
+                switch (getCurrentMode()){
+                    case DELETE_MODE:
                         deleteAnnotation();
-                    } else {
+                        break;
+                    case ANNOTATE_MODE:
                         updateAnnotation();
-                    }
-                } else {
-                    currentBbox.data = new Array();
+                        break;
+                    case EDIT_MODE:
+                        editAnnotation(evt);
+                        break;
                 }
             }
-
             rightClick = false;
             dragStart = false;
             updateGraphics();
@@ -313,9 +596,12 @@
         });
 
         canvas.addEventListener('mousemove', function (evt) {
+            if (menuOpening){
+                return;
+            }
             getCorrectCoords(evt);
-            if (getDeleteMode() == true) {
-                delete_idx = getDeleteIdx();
+            if (getCurrentMode() == DELETE_MODE || getCurrentMode() == EDIT_MODE) {
+                polygon_idx = getPolygonIdx();
                 updateGraphics();
             } else if (rightClick) {
                 var timeMove = new Date().getTime();
@@ -336,13 +622,68 @@
                 } else {
                     timeDownUp = null;
                 }
-            } else if (mode == "bbox" && dragStart) {
-                dragged = true;
-                updateGraphics();
-            } else if (mode == "link") {
-                updateGraphics();
+            } else {
+                updateGraphics()
             }
         });
+
+        function editAnnotation(evt){
+            if (typeof polygon_idx === "undefined") return;
+            menuOpening = true;  
+            document.getElementById('contextmenu').style.left=evt.clientX+"px";
+            document.getElementById('contextmenu').style.top=evt.clientY+"px";
+            document.getElementById('contextmenu').style.display="block";
+        }
+
+        document.getElementById("edit_label").onclick = function(){
+            menuOpening = false;
+            switch (current_task_mode){
+                case OBJECT_MODE:
+                    document.getElementById("object_current_label").innerHTML = `Current label : ${annotations[polygon_idx].class}`;
+                    document.getElementById('contextmenu').style.display="none";
+                    document.getElementById('object_edit_label_menu').style.display="block";
+                    break;
+                case MATERIAL_MODE:
+                    document.getElementById("material_current_label").innerHTML = `Current label : ${annotations[polygon_idx].class}`;
+                    document.getElementById('contextmenu').style.display="none";
+                    document.getElementById('material_edit_label_menu').style.display="block";
+                    break;
+                case CONDITION_MODE:
+                    document.getElementById("condition_current_label").innerHTML = `Current label : ${annotations[polygon_idx].class}`;
+                    document.getElementById('contextmenu').style.display="none";
+                    document.getElementById('condition_edit_label_menu').style.display="block";
+                    break;
+            }
+
+        }
+
+        document.getElementById("bring_to_front").onclick = function(){
+            menuOpening = false;
+            annotations.moveElement(polygon_idx,annotations.length -1);
+            document.getElementById('contextmenu').style.display="none";
+            updateGraphics()
+        }
+
+        document.getElementById("bring_forward").onclick = function(){
+            menuOpening = false;
+            annotations.moveElement(polygon_idx, polygon_idx+1);
+            document.getElementById('contextmenu').style.display="none";
+            updateGraphics()
+        }
+
+        document.getElementById("send_backward").onclick = function(){
+            menuOpening = false;
+            annotations.moveElement(polygon_idx, polygon_idx-1);
+            document.getElementById('contextmenu').style.display="none";
+            updateGraphics()
+        }
+
+        document.getElementById("send_to_back").onclick = function(){
+            menuOpening = false;
+            annotations.moveElement(polygon_idx, 0);
+            document.getElementById('contextmenu').style.display="none";
+            updateGraphics()
+        }
 
         function drawPolygonOutline(corners) {
             for (var j = 0; j < corners.length; j++) {
@@ -354,6 +695,7 @@
                 ctx.lineTo(corners[j][0], corners[j][1]);
                 ctx.stroke();
             }
+            ctx.lineTo(correctX, correctY);
             ctx.stroke();
             ctx.closePath();
         }
@@ -371,42 +713,65 @@
             ctx.fill();
         }
 
-        function toggleMode() {
-            modeNum += 1;
-            if (modeNum >= modes.length) {
-                modeNum = 0;
+        function fillPolygon2(corners) {
+            maskctx.globalCompositeOperation = 'source-over';
+            maskctx.beginPath();
+            maskctx.moveTo(corners[0][0], corners[0][1]);
+            for (var j = 1; j < corners.length; j++) {
+                maskctx.lineTo(corners[j][0], corners[j][1]);
+                maskctx.stroke();
             }
-            setDeleteMode(false);
-            mode = modes[modeNum];
-            modeButton.value = 'Mode: ' + capitalize(mode);
-            clearCurrentAnn();
+            maskctx.lineTo(corners[0][0], corners[0][1]);
+            maskctx.stroke();
+            maskctx.closePath();
+            maskctx.fill();
+        }
+
+        function cutPolygon2(corners) {
+            maskctx.globalCompositeOperation = 'destination-out';
+            maskctx.beginPath();
+            maskctx.moveTo(corners[0][0], corners[0][1]);
+            for (var j = 1; j < corners.length; j++) {
+                maskctx.lineTo(corners[j][0], corners[j][1]);
+                maskctx.stroke();
+            }
+            maskctx.lineTo(corners[0][0], corners[0][1]);
+            maskctx.stroke();
+            maskctx.closePath();
+            maskctx.fill();
         }
 
         function clearCurrentAnn() {
-            currentBbox.data = new Array();
-            currentLink.data = new Array();
             currentPolygon.data = new Array();
         }
 
         function deleteAnnotation() {
-            if (delete_idx > -1) {
-                var ann_copy = deep_copy(annotations[delete_idx]);
+            if (polygon_idx > -1) {
+                var ann_copy = deep_copy(annotations[polygon_idx]);
                 trashcan.push(ann_copy);
-                annotations.splice(delete_idx, 1);
-                delete_idx = getDeleteIdx();
+                annotations.splice(polygon_idx, 1);
+                polygon_idx = getPolygonIdx();
                 if(annotations.length == 0)
                     // no more to delete, go back to annotate mode
-                    setDeleteMode(false);
+                    setAnnotate();
             }
+            annotationsChanged();
         }
 
-        function toggleDelete () {
-            setDeleteMode(!getDeleteMode());
+        function setDelete () {
+            setMode(DELETE_MODE);
         }
 
-        function getDeleteMode()
-        {
-            return delete_mode;
+        function setAnnotate() {
+            setMode(ANNOTATE_MODE);
+        }
+
+        function setEdit() {
+            setMode(EDIT_MODE);
+        }
+
+        function getCurrentMode() {
+            return current_mode;
         }
 
         function setDeleteMode(deleteMode) {
@@ -427,7 +792,7 @@
                 updateGraphics();
             } else {
                 // delete mode
-                delete_idx = getDeleteIdx();
+                polygon_idx = getPolygonIdx();
                 canvas.style.cursor = "pointer";
                 $("#annotate_button").removeClass('btn-primary');
                 $("#annotate_button").addClass('btn-outline-secondary');
@@ -436,16 +801,146 @@
                 $("#delete_button").addClass('btn-primary');
                 updateGraphics();
             }
+        }
 
+        function setMode(mode) {
+            menuOpening = false;
+            document.getElementById('contextmenu').style.display="none";
+            if (mode == DELETE_MODE) {
+                if( $("#delete_button").hasClass("disabled")) return;
+                currentPolygon = { 'class': [], 'data': [] };
+                current_mode = mode;
+                // delete mode
+                polygon_idx = getPolygonIdx();
+                canvas.style.cursor = "pointer";
+                $("#annotate_button").removeClass('btn-primary');
+                $("#annotate_button").addClass('btn-outline-secondary');
+                $("#edit_button").removeClass('btn-primary');
+                $("#edit_button").addClass('btn-outline-secondary');
+
+                $("#delete_button").removeClass('btn-outline-secondary');
+                $("#delete_button").addClass('btn-primary');
+                updateGraphics();
+            } else if (mode == ANNOTATE_MODE) {
+                current_mode = mode;
+                // annotate mode
+                canvas.style.cursor = "crosshair";
+                $("#delete_button").removeClass('btn-primary');
+                $("#delete_button").addClass('btn-outline-secondary');
+                $("#edit_button").removeClass('btn-primary');
+                $("#edit_button").addClass('btn-outline-secondary');
+
+                $("#annotate_button").removeClass('btn-outline-secondary');
+                $("#annotate_button").addClass('btn-primary');
+                updateGraphics();
+            } else {
+                if( $("#edit_button").hasClass("disabled")) return;
+                currentPolygon = { 'class': [], 'data': [] };
+                current_mode = mode;
+                // edit mode
+                canvas.style.cursor = "pointer";
+                $("#delete_button").removeClass('btn-primary');
+                $("#delete_button").addClass('btn-outline-secondary');
+                $("#annotate_button").removeClass('btn-primary');
+                $("#annotate_button").addClass('btn-outline-secondary');
+
+                $("#edit_button").removeClass('btn-outline-secondary');
+                $("#edit_button").addClass('btn-primary');
+                updateGraphics();
+            }
+        }
+
+        function setObjectMode() {
+            setTaskMode(OBJECT_MODE);
+        }
+
+        function setMaterialMode() {
+            setTaskMode(MATERIAL_MODE);
+        }
+
+        function setConditionMode() {
+            setTaskMode(CONDITION_MODE);
+        }
+
+        function setTaskMode(mode) {
+            currentPolygon = { 'class': [], 'data': [] };
+            menuOpening = false;
+            document.getElementById('contextmenu').style.display="none";
+            switch (current_task_mode){
+                case OBJECT_MODE:
+                    objectAnnotations = annotations;
+                    break;
+                case MATERIAL_MODE:
+                    materialAnnotations = annotations;
+                    break
+                case CONDITION_MODE:
+                    conditionAnnotations = annotations;
+                    break;
+            }
+            if (mode == OBJECT_MODE) {
+                current_task_mode = mode;
+                // delete mode
+                $("#material_button").removeClass('btn-primary');
+                $("#material_button").addClass('btn-outline-secondary');
+                materialClassSelection.style.display = "none";
+                $("#condition_button").removeClass('btn-primary');
+                $("#condition_button").addClass('btn-outline-secondary');
+                conditionClassSelection.style.display = "none";
+
+                $("#object_button").removeClass('btn-outline-secondary');
+                $("#object_button").addClass('btn-primary');
+                objectClassSelection.style.display = "block";
+                annotations = objectAnnotations;
+
+                if(annotations.length == 0) setAnnotate();
+                annotationsChanged();
+                updateGraphics();
+            } else if (mode == MATERIAL_MODE) {
+                current_task_mode = mode;
+                $("#object_button").removeClass('btn-primary');
+                $("#object_button").addClass('btn-outline-secondary');
+                objectClassSelection.style.display = "none";
+                $("#condition_button").removeClass('btn-primary');
+                $("#condition_button").addClass('btn-outline-secondary');
+                conditionClassSelection.style.display = "none";
+
+                $("#material_button").removeClass('btn-outline-secondary');
+                $("#material_button").addClass('btn-primary');
+                materialClassSelection.style.display = "block";
+                annotations = materialAnnotations;
+
+                if(annotations.length == 0) setAnnotate();
+                annotationsChanged();
+                updateGraphics();
+            } else {
+                current_task_mode = mode;
+                $("#object_button").removeClass('btn-primary');
+                $("#object_button").addClass('btn-outline-secondary');
+                objectClassSelection.style.display = "none";
+                $("#material_button").removeClass('btn-primary');
+                $("#material_button").addClass('btn-outline-secondary');
+                materialClassSelection.style.display = "none";
+
+                $("#condition_button").removeClass('btn-outline-secondary');
+                $("#condition_button").addClass('btn-primary');
+                conditionClassSelection.style.display = "block";
+                annotations = conditionAnnotations;
+
+                if(annotations.length == 0) setAnnotate();
+                annotationsChanged();
+                updateGraphics();
+            }
         }
 
         function reset() {
+            var result = window.confirm("Do you really want to reset?");
+            if (!result) return;
             clearAnnotations();
             reposition();
             firstPoint = true;
             dragStart = false;
             dragged = false;
-            setDeleteMode(false);
+            setMode(ANNOTATE_MODE);
         }
 
         function reposition() {
@@ -464,101 +959,42 @@
         }
 
         function updateAnnotation() {
-            switch (mode) {
-                case "dot": // dot mode
-                    annotations.push({ 'class': getClass(), 'mode': 'dot', 'data': [correctX, correctY] });
-                    break;
-                case "link": // link mode
-                    currentLink.class = getClass();
-                    currentLink.data.push([correctX, correctY]);
-                    if (firstPoint) {
-                        firstPoint = false;
-                    } else {
-                        annotations.push(Object.assign({}, currentLink));
-                        currentLink.data = new Array();
-                        firstPoint = true;
-                    }
-                    break;
-                case "polygon": // polygon mode
-                    currentPolygon.class = getClass();
-                    currentPolygon.data.push([correctX, correctY]);
-            }
+            currentPolygon.class = getClass();
+            currentPolygon.data.push([correctX, correctY]);
         }
 
         function clearAnnotations() {
             annotations = new Array();
             trashcan = new Array();
-            currentLink = { 'class': [], 'mode': 'link', 'data': [] };
-            currentPolygon = { 'class': [], 'mode': 'polygon', 'data': [] };
+            currentPolygon = { 'class': [], 'data': [] };
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         function getClass() {
-            return classSelection[classSelection.selectedIndex].innerHTML;
+            if (current_task_mode == OBJECT_MODE) return objectClassSelection[objectClassSelection.selectedIndex].innerHTML;
+            else if (current_task_mode == MATERIAL_MODE) return materialClassSelection[materialClassSelection.selectedIndex].innerHTML;
+            else return conditionClassSelection[conditionClassSelection.selectedIndex].innerHTML;
         }
 
         // Redraw all annotations
         function updateGraphics() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            maskctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
             for (var i = 0; i < annotations.length; i++) {
                 var ann = annotations[i];
                 var corners = ann.data;
                 var r, g, b;
-                if (getDeleteMode() == true && delete_idx == i) {
+                if ((getCurrentMode() == DELETE_MODE || getCurrentMode() == EDIT_MODE) && polygon_idx == i) {
                     r = g = b = 0.5;
                 } else {
                     [r, g, b] = getColor(ann);
                 }
-                switch (ann.mode) {
-                    case "dot":
-                        ctx.fillStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
-                        ctx.fillRect(corners[0] - dotSize / 2, corners[1] - dotSize / 2, dotSize, dotSize);
-                        break;
-                    case "link":
-                        // draw complete links
-                        ctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", 1.0)";
-                        ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
-                        ctx.beginPath();
-                        ctx.moveTo(corners[0][0], corners[0][1]);
-                        ctx.lineTo(corners[1][0], corners[1][1]);
-                        ctx.closePath();
-                        ctx.stroke();
-                        ctx.fillRect(corners[0][0] - dotSize / 2, corners[0][1] - dotSize / 2, dotSize, dotSize);
-                        ctx.fillRect(corners[1][0] - dotSize / 2, corners[1][1] - dotSize / 2, dotSize, dotSize);
-                        break;
-                    case "polygon":
-                        // draw complete polygons
-                        ctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", " + transparency_level + ")";
-                        ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
-                        fillPolygon(corners);
-                        break;
-                    case "bbox":
-                        ctx.fillStyle   = "rgba(1, 1, 1, 0)";
-                        ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
-                        var xmin = ann.data[0][0];
-                        var ymin = ann.data[0][1];
-                        var xmax = ann.data[1][0];
-                        var ymax = ann.data[1][1];
-                        var corners = [[xmin, ymin], [xmax, ymin], [xmax, ymax], [xmin, ymax]];
-                        fillPolygon(corners);
-                }
-            }
 
-            // draw current link
-            if (currentLink.data.length != 0) {
-                var r, g, b;
-                [r, g, b] = getColor(currentLink);
-                ctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", 1.0)";
+                // draw complete polygons
+                ctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", " + transparency_level + ")";
                 ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
-                var dot = currentLink.data;
-                ctx.fillRect(dot[0][0] - dotSize / 2, dot[0][1] - dotSize / 2, dotSize, dotSize);
-                ctx.beginPath();
-                ctx.moveTo(dot[0][0], dot[0][1]);
-                ctx.lineTo(correctX, correctY);
-                ctx.closePath();
-                ctx.stroke();
+                fillPolygon(corners);
             }
-
             // draw current polygon
             if (currentPolygon.data.length != 0) {
                 var r, g, b;
@@ -568,67 +1004,74 @@
                 var corners = currentPolygon.data;
                 drawPolygonOutline(corners);
             }
+            if (current_task_mode != OBJECT_MODE) drawMask();
+        }
 
-            // draw current bbox
-            if (currentBbox.data.length != 0){
+        function drawMask() {
+            maskctx.clearRect(0, 0, canvas.width, canvas.height);
+            var targetClasses = ["road","ground"]; 
+            for (var i = 0; i < objectAnnotations.length; i++) {
+                var ann = objectAnnotations[i];                
+                var corners = ann.data;
                 var r, g, b;
-                [r, g, b] = getColor(currentBbox);
-                ctx.fillStyle   = "rgba(1, 1, 1, 0)";
-                ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
-                var xmin = currentBbox.data[0][0];
-                var ymin = currentBbox.data[0][1];
-                var xmax = correctX;
-                var ymax = correctY;
-                var corners = [[xmin, ymin], [xmax, ymin], [xmax, ymax], [xmin, ymax]];
-                fillPolygon(corners);
+                r = g = b = 0.5;
+                // draw complete polygons
+                maskctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", 1.0)";
+                maskctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
+                if (targetClasses.indexOf(ann.class)<0) fillPolygon2(corners);
+                else cutPolygon2(corners);
             }
         }
 
         // depending on mode, either undo deletion or undo annotation
         function undo() {
-            if (getDeleteMode() == true){
+            if (getCurrentMode() == DELETE_MODE){
                 if (trashcan.length > 0) {
                     annotations.push(trashcan.pop());
                 }
             } else {
-                switch (mode) {
-                    case "dot":
-                        annotations.pop();
-                        break;
-                    case "link":
-                        if (currentLink.data.length == 0) {
-                            annotations.pop();
-                        } else {
-                            currentLink.data = new Array();
-                            firstPoint = true;
-                        }
-                        break;
-                    case "polygon":
-                        if (currentPolygon.data.length == 0) {
-                            annotations.pop();
-                        } else {
-                            currentPolygon.data.pop();
-                        }
-                        break;
-                    case "bbox":
-                        if (currentBbox.data.length == 0){
-                            annotations.pop();
-                        } else {
-                            currentBbox.data = new Array();
-                            dragStart = false;
-                            dragged = false;
-                        }
+                if (currentPolygon.data.length == 0) {
+                    annotations.pop();
+                } else {
+                    console.log(currentPolygon);
+                    currentPolygon.data.pop();
+                    console.log(currentPolygon);
                 }
             }
+            if(annotations.length == 0){
+                // no more to delete, go back to annotate mode
+                setAnnotate();
+            }
+            annotationsChanged();
             updateGraphics();
         }
 
-        window.addEventListener("keydown", function (evt) {
-            // Press E for "Mode toggle"
-            if (evt.key == 'e') {
-                toggleMode();
-            }
 
+        document.getElementById("object_edit_label_menu").addEventListener("click", function(){
+            document.getElementById('object_edit_label_menu').style.display="none";
+        })
+
+        document.getElementById("object_edit_label_menu_content").addEventListener("click", function(evt){
+            evt.stopPropagation();
+        })
+
+        document.getElementById("material_edit_label_menu").addEventListener("click", function(){
+            document.getElementById('material_edit_label_menu').style.display="none";
+        })
+
+        document.getElementById("material_edit_label_menu_content").addEventListener("click", function(evt){
+            evt.stopPropagation();
+        })
+        
+        document.getElementById("condition_edit_label_menu").addEventListener("click", function(){
+            document.getElementById('condition_edit_label_menu').style.display="none";
+        })
+
+        document.getElementById("condition_edit_label_menu_content").addEventListener("click", function(evt){
+            evt.stopPropagation();
+        })
+
+        window.addEventListener("keydown", function (evt) {
             // Press ctrl + Z for "Undo"
             if ((evt.key == 'z') && (evt.ctrlKey)) {
                 undo();
@@ -636,22 +1079,52 @@
 
             // Press D for "Delete"
             if ((evt.key == 'd')) {
-                toggleDelete();
+                setDelete();
             }
+
+            // Press A for "Annotate"
+            if ((evt.key == 'a')) {
+                setAnnotate();
+            }
+
+            // Press E for "Edit"
+            if ((evt.key == 'e')) {
+                setEdit();
+            }
+
+            // if ((evt.key == 't')) { // for test
+            //     drawMask();
+            // }
 
             // Press C for "Close Polygon"
             if (evt.key == 'c') {
                 if (currentPolygon.data.length > 2) {
                     currentPolygon.class = getClass();
                     annotations.push(Object.assign({}, currentPolygon));
+                    switch (current_task_mode){
+                        case OBJECT_MODE:
+                            objectAnnotations = annotations;
+                            break;
+                        case MATERIAL_MODE:
+                            materialAnnotations = annotations;
+                            break;
+                        case CONDITION_MODE:
+                            conditionAnnotations = annotations;
+                            break;
+                    }
                     currentPolygon.data = new Array();
                 }
                 // Update coordinates
-                if (annotations.length == 0) {
-                    document.getElementById('coordinates').value = '';
-                } else {
-                    document.getElementById('coordinates').value = JSON.stringify(annotations);
-                }
+                var objectJsonString, materialJsonString, conditionJsonString;
+                objectAnnotations.length    == 0 ? objectJsonString    = '' : objectJsonString    = JSON.stringify(objectAnnotations);
+                materialAnnotations.length  == 0 ? materialJsonString  = '' : materialJsonString  = JSON.stringify(materialAnnotations);
+                conditionAnnotations.length == 0 ? conditionJsonString = '' : conditionJsonString = JSON.stringify(conditionAnnotations);
+                document.getElementById('coordinates').value = objectJsonString + materialJsonString + conditionJsonString;
+                // if (annotations.length == 0) {
+                //     document.getElementById('coordinates').value = '';
+                // } else {
+                //     document.getElementById('coordinates').value = JSON.stringify(annotations);
+                // }
             }
             updateGraphics();
         }, true);
@@ -698,76 +1171,40 @@
         correctY = Math.round(correctY);
     }
 
-    function getDeleteIdx(){
-        var deleteIdx = -1;
-        var min_dist = 1000000;
-        var dist_array = new Array();
-        for (var i = 0; i < annotations.length; i++) {
-            var ann = annotations[i];
-            var corners = ann.data;
-            switch (ann.mode) {
-                case "dot":
-                    dist_array.push(getDist([correctX, correctY], corners));
-                    break;
-                case "link":
-                    dist_array.push(get_avg_dist(corners));
-                    break;
-                case "polygon":
-                    dist_array.push(get_avg_dist(corners));
-                    break;
-                case "bbox":
-                    dist_array.push(get_avg_dist(corners));
+    function getPolygonIdx(){
+        for (var i = annotations.length - 1; i >= 0; i--) {
+            if (pointInPolygon(correctX, correctY, annotations[i].data)){
+                return i;
             }
         }
-        var dist;
-        for (var i = 0; i < dist_array.length; i++){
-            dist = dist_array[i];
-            if (dist < min_dist) {
-                min_dist = dist;
-                deleteIdx = i;
-            }
-        }
-        return deleteIdx
-    }
-
-    function getDist(pair_a, pair_b) {
-        var distance = Math.sqrt(Math.pow((pair_a[0] - pair_b[0]), 2) + Math.pow((pair_a[1] - pair_b[1]), 2));
-        return distance;
     }
 
     function deep_copy(obj){
         return jQuery.extend(true, {}, obj);
     }
 
-    var annotationsChanged = function()
-    {
+    var annotationsChanged = function(){
         if(annotations.length == 0)
         {
             $("#delete_button").addClass("disabled");
+            $("#edit_button").addClass("disabled");
         } else {
             $("#delete_button").removeClass("disabled");
+            $("#edit_button").removeClass("disabled");
         }
     }
 
-    function capitalize(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-    }
-
-    function mean(array){
-        var total = 0;
-        for (var j = 0; j < array.length; j++) {
-            total += array[j];
+    function pointInPolygon(correctX, correctY, corners) {
+        var windingNumber = 0, x = correctX, y = correctY;
+        var i = corners.length-1; // indexLast(corners)
+        for (var j = 0, yi, yj, counterClockwise ; i >= 0; j = i--) {
+            yi=corners[i][1]-y; yj=corners[j][1]-y;
+            if ((yi>0)!=(yj>0)
+                && (counterClockwise=(yj>yi))
+                    ==(yj*(corners[i][0]-x)>yi*(corners[j][0]-x)))
+            windingNumber+=counterClockwise?1:-1;
         }
-        var avg = total / array.length;
-        return avg;
-    }
-
-    function get_avg_dist(corners){
-        var avg_dist_array = new Array();
-        for (var j = 0; j < corners.length; j++) {
-            avg_dist_array.push(getDist([correctX, correctY], corners[j]));
-        }
-        return mean(avg_dist_array);
+        return windingNumber!==0;
     }
 
     String.prototype.hashCode = function () {
@@ -807,6 +1244,26 @@
             g: Math.round(g * 255),
             b: Math.round(b * 255)
         };
+    }
+
+    function toHex(v) {
+       return (('00' + v.toString(16).toUpperCase()).substr(-2));
+    }
+
+    function HSVtoRGBstring(h, s, v) {
+        var rgbColors = HSVtoRGB(h, s, v);
+        var r = rgbColors.r;
+        var g = rgbColors.g;
+        var b = rgbColors.b;
+        return "#"+toHex(r)+toHex(g)+toHex(b);
+    }
+
+    function blackOrWhite ( hexcolor ) {
+	    var r = parseInt( hexcolor.substr( 1, 2 ), 16 ) ;
+	    var g = parseInt( hexcolor.substr( 3, 2 ), 16 ) ;
+	    var b = parseInt( hexcolor.substr( 5, 2 ), 16 ) ;
+
+	    return ( ( ( (r * 299) + (g * 587) + (b * 114) ) / 1000 ) < 128 ) ? "white" : "black" ;
     }
 
     function getColor(ann){
