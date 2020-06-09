@@ -41,6 +41,10 @@
         width: 130px !important;
     }
 
+    .form-coltrol option{
+        user-select: none;
+    }
+
     #object_class {
         /* display: none; */
         width: 200px;
@@ -67,7 +71,7 @@
         margin-top: 20px;
     }
 
-    #contextmenu{
+    #myContextmenu{
         display:none;
         position:fixed;
         left:0px;
@@ -77,13 +81,13 @@
         border:1px solid #000;
         background-color:#fff;
     }
-    #contextmenu li{
+    #myContextmenu li{
         user-select: none;
         padding-top: 5px;
         padding-bottom: 5px;
         cursor:pointer;
     }
-    #contextmenu ul {
+    #myContextmenu ul {
         user-select: none;
         list-style: none;
         padding-left: 20px;
@@ -137,6 +141,10 @@
 
     .hoge{
         color: #FF0000;
+    }
+
+    #parent{
+        user-select: none;
     }
 
 </style>
@@ -200,7 +208,7 @@
     </div>
 </div>
 
-<div id="contextmenu">
+<div id="myContextmenu">
     <ul>
         <li id="edit_label">Edit Label</li>
         <li id="bring_to_front">Bring to Front</li>
@@ -263,10 +271,13 @@
     var current_mode = 1;
     var current_task_mode = 0;
     var polygon_idx = -1;
+    var target_idx = -1;
+    var node_idx = -1;
     var trashcan = new Array();
     var colors = {};
     var timeDownUp = null;
     var rightClick = false;
+    var leftClick = false;
     var menuOpening;
     var annotationMode;
     const DELETE_MODE = 0;
@@ -293,6 +304,7 @@
         object_label_list = document.getElementById("object_label_list");
         material_label_list = document.getElementById("material_label_list");
         condition_label_list = document.getElementById("condition_label_list");
+        myContextmenu = document.getElementById("myContextmenu");
 
         canvas.width = img.width;
         canvas.height = img.height;
@@ -540,21 +552,20 @@
 
 
         // disable right click context menu on canvas
-        canvas.oncontextmenu = function ()
-        {
-            return false;
-        }
+        parent.oncontextmenu = function () {return false;}
+        myContextmenu.oncontextmenu = function () {return false;}
 
-        canvas.addEventListener('mouseout', function(evt) {
-            dragStart = false;
-            dragged = false; 
-        });
+        // canvas.addEventListener('mouseout', function(evt) {
+        //     dragStart = false;
+        //     dragged = false; 
+        // });
 
         canvas.addEventListener('pointerdown', function (evt) {
             if (menuOpening) {
                 return;
             }
             rightClick = evt.which == 3;
+            leftClick = evt.which == 1;
             getCorrectCoords(evt);
             timeDownUp = new Date().getTime();
             anchorX = evt.clientX;
@@ -566,7 +577,7 @@
         canvas.addEventListener('pointerup', function (evt) {
             if (menuOpening){
                 menuOpening = false;
-                document.getElementById('contextmenu').style.display="none";
+                myContextmenu.style.display="none";
                 return;
             }
             timeDownUp = new Date().getTime();
@@ -579,13 +590,17 @@
                     case ANNOTATE_MODE:
                         updateAnnotation();
                         break;
-                    case EDIT_MODE:
-                        editAnnotation(evt);
-                        break;
+                    // case EDIT_MODE:
+                    //     if (!dragged) openMycontextmenu(evt);
+                    //     break;
                 }
+            } else {
+                if (getCurrentMode() == EDIT_MODE) openMycontextmenu(evt);
             }
             rightClick = false;
-            dragStart = false;
+            leftClick  = false;
+            dragStart  = false;
+            dragged    = false;
             updateGraphics();
 
             if (annotations.length == 0) {
@@ -602,8 +617,12 @@
             getCorrectCoords(evt);
             if (getCurrentMode() == DELETE_MODE || getCurrentMode() == EDIT_MODE) {
                 polygon_idx = getPolygonIdx();
+                if (getCurrentMode() == EDIT_MODE && !dragged){
+                    [target_idx, node_idx] = getNodeIdx();
+                }
                 updateGraphics();
-            } else if (rightClick) {
+            }
+            if (rightClick) {
                 var timeMove = new Date().getTime();
                 if (timeMove > timeDownUp) {
                     if (dragStart) {
@@ -622,17 +641,33 @@
                 } else {
                     timeDownUp = null;
                 }
+            } else if (getCurrentMode() == EDIT_MODE && leftClick) {
+                var timeMove = new Date().getTime();
+                if (timeMove > timeDownUp) {
+                    if (dragStart) {
+                        dragged = true;
+                        editAnnotation();
+                    }
+                } else {
+                    timeDownUp = null;
+                }
             } else {
                 updateGraphics()
             }
         });
 
-        function editAnnotation(evt){
+        function openMycontextmenu(evt){
             if (typeof polygon_idx === "undefined") return;
             menuOpening = true;  
-            document.getElementById('contextmenu').style.left=evt.clientX+"px";
-            document.getElementById('contextmenu').style.top=evt.clientY+"px";
-            document.getElementById('contextmenu').style.display="block";
+            myContextmenu.style.left=evt.clientX+"px";
+            myContextmenu.style.top=evt.clientY+"px";
+            myContextmenu.style.display="block";
+        }
+
+        function editAnnotation() {
+            if (target_idx<0 || node_idx <0) return;
+            ann = annotations[target_idx];
+            ann.data[node_idx] = [correctX,correctY];
         }
 
         document.getElementById("edit_label").onclick = function(){
@@ -640,17 +675,17 @@
             switch (current_task_mode){
                 case OBJECT_MODE:
                     document.getElementById("object_current_label").innerHTML = `Current label : ${annotations[polygon_idx].class}`;
-                    document.getElementById('contextmenu').style.display="none";
+                    myContextmenu.style.display="none";
                     document.getElementById('object_edit_label_menu').style.display="block";
                     break;
                 case MATERIAL_MODE:
                     document.getElementById("material_current_label").innerHTML = `Current label : ${annotations[polygon_idx].class}`;
-                    document.getElementById('contextmenu').style.display="none";
+                    myContextmenu.style.display="none";
                     document.getElementById('material_edit_label_menu').style.display="block";
                     break;
                 case CONDITION_MODE:
                     document.getElementById("condition_current_label").innerHTML = `Current label : ${annotations[polygon_idx].class}`;
-                    document.getElementById('contextmenu').style.display="none";
+                    myContextmenu.style.display="none";
                     document.getElementById('condition_edit_label_menu').style.display="block";
                     break;
             }
@@ -660,28 +695,28 @@
         document.getElementById("bring_to_front").onclick = function(){
             menuOpening = false;
             annotations.moveElement(polygon_idx,annotations.length -1);
-            document.getElementById('contextmenu').style.display="none";
+            myContextmenu.style.display="none";
             updateGraphics()
         }
 
         document.getElementById("bring_forward").onclick = function(){
             menuOpening = false;
             annotations.moveElement(polygon_idx, polygon_idx+1);
-            document.getElementById('contextmenu').style.display="none";
+            myContextmenu.style.display="none";
             updateGraphics()
         }
 
         document.getElementById("send_backward").onclick = function(){
             menuOpening = false;
             annotations.moveElement(polygon_idx, polygon_idx-1);
-            document.getElementById('contextmenu').style.display="none";
+            myContextmenu.style.display="none";
             updateGraphics()
         }
 
         document.getElementById("send_to_back").onclick = function(){
             menuOpening = false;
             annotations.moveElement(polygon_idx, 0);
-            document.getElementById('contextmenu').style.display="none";
+            myContextmenu.style.display="none";
             updateGraphics()
         }
 
@@ -774,38 +809,9 @@
             return current_mode;
         }
 
-        function setDeleteMode(deleteMode) {
-            if( deleteMode == true && $("#delete_button").hasClass("disabled"))
-            {
-                return;
-            }
-            
-            delete_mode = deleteMode;
-            if (delete_mode == false) {
-                // annotate mode
-                canvas.style.cursor = "crosshair";
-                $("#delete_button").removeClass('btn-primary');
-                $("#delete_button").addClass('btn-outline-secondary');
-
-                $("#annotate_button").removeClass('btn-outline-secondary');
-                $("#annotate_button").addClass('btn-primary');
-                updateGraphics();
-            } else {
-                // delete mode
-                polygon_idx = getPolygonIdx();
-                canvas.style.cursor = "pointer";
-                $("#annotate_button").removeClass('btn-primary');
-                $("#annotate_button").addClass('btn-outline-secondary');
-
-                $("#delete_button").removeClass('btn-outline-secondary');
-                $("#delete_button").addClass('btn-primary');
-                updateGraphics();
-            }
-        }
-
         function setMode(mode) {
             menuOpening = false;
-            document.getElementById('contextmenu').style.display="none";
+            myContextmenu.style.display="none";
             if (mode == DELETE_MODE) {
                 if( $("#delete_button").hasClass("disabled")) return;
                 currentPolygon = { 'class': [], 'data': [] };
@@ -865,7 +871,7 @@
         function setTaskMode(mode) {
             currentPolygon = { 'class': [], 'data': [] };
             menuOpening = false;
-            document.getElementById('contextmenu').style.display="none";
+            myContextmenu.style.display="none";
             switch (current_task_mode){
                 case OBJECT_MODE:
                     objectAnnotations = annotations;
@@ -965,6 +971,9 @@
 
         function clearAnnotations() {
             annotations = new Array();
+            objectAnnotations = new Array();
+            materialAnnotations = new Array();
+            conditionAnnotations = new Array();
             trashcan = new Array();
             currentPolygon = { 'class': [], 'data': [] };
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -984,12 +993,11 @@
                 var ann = annotations[i];
                 var corners = ann.data;
                 var r, g, b;
-                if ((getCurrentMode() == DELETE_MODE || getCurrentMode() == EDIT_MODE) && polygon_idx == i) {
-                    r = g = b = 0.5;
+                if ((getCurrentMode() == DELETE_MODE || getCurrentMode() == EDIT_MODE) && polygon_idx == i && !dragged) {
+                    r = g = b = 0;
                 } else {
                     [r, g, b] = getColor(ann);
                 }
-
                 // draw complete polygons
                 ctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", " + transparency_level + ")";
                 ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
@@ -1005,6 +1013,7 @@
                 drawPolygonOutline(corners);
             }
             if (current_task_mode != OBJECT_MODE) drawMask();
+            if (getCurrentMode() == EDIT_MODE) drawPoint();
         }
 
         function drawMask() {
@@ -1014,13 +1023,29 @@
                 var ann = objectAnnotations[i];                
                 var corners = ann.data;
                 var r, g, b;
-                r = g = b = 0.5;
+                r = g = b = 0;
                 // draw complete polygons
                 maskctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", 1.0)";
                 maskctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
                 if (targetClasses.indexOf(ann.class)<0) fillPolygon2(corners);
                 else cutPolygon2(corners);
             }
+        }
+
+        function drawPoint() {
+            if (target_idx<0 || node_idx <0) return;
+            ann = annotations[target_idx];
+            corner = ann.data[node_idx];
+            var r, g, b;
+            [r, g, b] = getColor(annotations[target_idx]);
+            x = corner[0];
+            y = corner[1];
+            ctx.fillStyle   = "rgba(" + r + "," + g + "," + b + ", 1.0)";
+            ctx.strokeStyle = "rgba(" + r + "," + g + "," + b + ", 1.0)";
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, Math.PI*2, false);
+            ctx.closePath();
+            ctx.fill();
         }
 
         // depending on mode, either undo deletion or undo annotation
@@ -1033,9 +1058,7 @@
                 if (currentPolygon.data.length == 0) {
                     annotations.pop();
                 } else {
-                    console.log(currentPolygon);
                     currentPolygon.data.pop();
-                    console.log(currentPolygon);
                 }
             }
             if(annotations.length == 0){
@@ -1073,22 +1096,22 @@
 
         window.addEventListener("keydown", function (evt) {
             // Press ctrl + Z for "Undo"
-            if ((evt.key == 'z') && (evt.ctrlKey)) {
+            if ((evt.key == 'z' || evt.key == 'Z') && (evt.ctrlKey)) {
                 undo();
             }
 
             // Press D for "Delete"
-            if ((evt.key == 'd')) {
+            if (evt.key == 'd' || evt.key == 'D') {
                 setDelete();
             }
 
             // Press A for "Annotate"
-            if ((evt.key == 'a')) {
+            if (evt.key == 'a' || evt.key == 'A') {
                 setAnnotate();
             }
 
             // Press E for "Edit"
-            if ((evt.key == 'e')) {
+            if (evt.key == 'e' || evt.key == 'E') {
                 setEdit();
             }
 
@@ -1097,7 +1120,7 @@
             // }
 
             // Press C for "Close Polygon"
-            if (evt.key == 'c') {
+            if (evt.key == 'c' || evt.key == 'C') {
                 if (currentPolygon.data.length > 2) {
                     currentPolygon.class = getClass();
                     annotations.push(Object.assign({}, currentPolygon));
@@ -1120,11 +1143,6 @@
                 materialAnnotations.length  == 0 ? materialJsonString  = '' : materialJsonString  = JSON.stringify(materialAnnotations);
                 conditionAnnotations.length == 0 ? conditionJsonString = '' : conditionJsonString = JSON.stringify(conditionAnnotations);
                 document.getElementById('coordinates').value = objectJsonString + materialJsonString + conditionJsonString;
-                // if (annotations.length == 0) {
-                //     document.getElementById('coordinates').value = '';
-                // } else {
-                //     document.getElementById('coordinates').value = JSON.stringify(annotations);
-                // }
             }
             updateGraphics();
         }, true);
@@ -1177,6 +1195,30 @@
                 return i;
             }
         }
+    }
+
+    function getNodeIdx(){
+        var targetIdx = -1;
+        var nodeIdx = -1;
+        var min_dist = 50;
+        for (var i = annotations.length - 1; i >= 0; i--) {
+            ann = annotations[i];
+            corners = ann.data;
+            for (var j = 0; j < corners.length; j++) {
+                dist = getDist([correctX, correctY], corners[j]);
+                if (dist < min_dist){
+                    targetIdx = i;
+                    nodeIdx = j;
+                    min_dist = dist;
+                }
+            }
+        }
+        return [targetIdx, nodeIdx];
+    }
+
+    function getDist(pair_a, pair_b) {
+        var distance = Math.sqrt(Math.pow((pair_a[0] - pair_b[0]), 2) + Math.pow((pair_a[1] - pair_b[1]), 2));
+        return distance;
     }
 
     function deep_copy(obj){
